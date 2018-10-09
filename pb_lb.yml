@@ -1,0 +1,6 @@
+---
+- hosts: loadbalancers
+  become: True
+  roles:
+    - common
+    - lb
