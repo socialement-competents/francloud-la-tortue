@@ -1,0 +1,33 @@
+- file:
+    path: /app
+    state: directory
+    mode: 0755
+
+
+- name: Grant permissions
+  shell: sudo chmod 777 /app
+
+- name: NODE | Clone/Pull repo
+  git:
+    repo: "https://github.com/socialement-competents/socoback.git"
+    dest: /app
+
+- name: NODE | Install npm deps
+  shell: npm i
+  register: npm_finished
+  failed_when: '"ERR!" in npm_finished.stderr'
+  args:
+    chdir: /app
+
+- name: NODE | Stop APP
+  shell: pm2 stop app
+  args:
+    chdir: /app
+  ignore_errors: yes
+
+- name: NODE | Start APP
+  shell: pm2 start app.js --name server
+  args:
+    chdir: /app
+  ignore_errors: yes
+  when: npm_finished.changed

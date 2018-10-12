@@ -1,0 +1,6 @@
+---
+- hosts: restapis
+  become: True
+  roles:
+    - common
+    - restapi

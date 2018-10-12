@@ -11,9 +11,26 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   groups = {
     "webservers" => ["web[1:#{NUMBER_OF_WEBSERVERS}]"],
+    "restapis" => ["restapi"],
     "loadbalancers" => ["load_balancer"],
-    "all_groups:children" => ["webservers","loadbalancers"]
+    "all_groups:children" => ["webservers","restapis","loadbalancers"]
   }
+
+  config.vm.define "restapi" do |restapi|
+      restapi.vm.box = VM_VERSION
+      restapi.vm.hostname = "restapi"
+      restapi.vm.network :private_network, ip: "10.0.15.30"
+      restapi.vm.network "forwarded_port", guest: 3000, host: "3000"
+      restapi.vm.provider VAGRANT_VM_PROVIDER do |vb|
+        vb.memory = MEMORY
+      end
+      restapi.vm.provision :shell, path: "install_node.sh"
+      restapi.vm.provision "ansible" do |ansible|
+        ansible.playbook = "pb_restapi.yml"
+        ansible.become = true
+        ansible.groups = groups
+      end
+    end
 
   # create some web servers
   (1..NUMBER_OF_WEBSERVERS).each do |i|
@@ -26,6 +43,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           vb.memory = MEMORY
         end
 
+      # Execute when all the VMs are up
       if i == NUMBER_OF_WEBSERVERS
           node.vm.provision "ansible" do |ansible|
             ansible.playbook = "pb_web.yml"
